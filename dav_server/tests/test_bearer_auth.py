@@ -33,7 +33,8 @@ class TestDavBearerAuth(TransactionCase):
         key = (
             self.env["res.users.apikeys"]
             .with_user(user)
-            ._generate("dav", "dav bearer test key")
+            .sudo()
+            ._generate("dav", "dav bearer test key", None)
         )
         apikeys = self.env["res.users.apikeys"]
         self.assertEqual(
@@ -51,7 +52,8 @@ class TestDavBearerAuth(TransactionCase):
         key = (
             self.env["res.users.apikeys"]
             .with_user(user)
-            ._generate(None, "unscoped test key")
+            .sudo()
+            ._generate(None, "unscoped test key", None)
         )
         apikeys = self.env["res.users.apikeys"]
         self.assertEqual(

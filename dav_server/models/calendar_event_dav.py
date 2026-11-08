@@ -13,7 +13,6 @@ from . import dav_identity
 EVENT_MAPPED_FIELDS = {
     "name",
     "description",
-    "notes",
     "location",
     "start",
     "stop",

@@ -125,30 +125,3 @@ class DavSyncChange(models.Model):
             stale.unlink()
         return count
 
-
-def log_changes(records, action):
-    """Append one change entry per (collection, record) pair.
-
-    Deliberately not filtered by the collection domain: over-logging only costs
-    a client a redundant fetch, while under-logging silently strands a record
-    on the device forever. The domain is applied when the REPORT is served.
-    """
-    if not records:
-        return
-    collections = records._dav_collections()
-    if not collections:
-        return
-    change_model = records.env["dav.sync.change"].sudo()
-    model_name = records._name
-    values_list = [
-        {
-            "collection_id": collection.id,
-            "model": model_name,
-            "res_id": record.id,
-            "dav_uid": record.dav_uid or str(record.id),
-            "action": action,
-        }
-        for record in records
-        for collection in collections
-    ]
-    change_model.create(values_list)

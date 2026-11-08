@@ -32,7 +32,6 @@ PARTNER_MAPPED_FIELDS = {
     "type",
     "is_company",
     "image_1920",
-    "image_1920_url",
     "company_name",
 }
 

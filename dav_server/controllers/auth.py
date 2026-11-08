@@ -140,10 +140,11 @@ def _second_factor_reason(user, auth_info):
     sync, it is refused up front with an explicit reason.
     """
     if isinstance(auth_info, dict):
-        marker = auth_info.get("mfa")
-        if marker not in (None, "skip"):
+        # 18.0 password logins always return 'default', which delegates to the
+        # MFA module; that case is covered by the _mfa_url check below.
+        if auth_info.get("mfa") == "enforce":
             return "the account requires a second authentication factor"
-    if user.totp_secret:
+    if user.sudo().totp_secret:
         return "the account has two-factor authentication enabled"
     mfa_url = getattr(user, "_mfa_url", None)
     if callable(mfa_url) and mfa_url():
@@ -170,6 +171,8 @@ def authenticate_with_bearer():
 
     # Extract the token
     api_key = auth_header.split("Bearer ", 1)[1].strip()
+    if not api_key:
+        raise Unauthorized("invalid Bearer token")
 
     # Validate the API key using res.users.apikeys. DAV tokens are issued with
     # the dedicated "dav" scope so they cannot be replayed against RPC.
