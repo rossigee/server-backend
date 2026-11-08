@@ -194,12 +194,14 @@ class TestDavAuth(TransactionCase):
         with mock.patch.object(
             radicale.auth, "request", fake_request
         ), mock.patch.object(
-            users_model, "_login", return_value=self.user.id
-        ) as login_mock:
+            users_model, "authenticate", return_value={"uid": self.user.id}
+        ) as authenticate_mock:
             auth = self._make_auth()
             result = auth._login(self.user.login, self.password)
-        login_mock.assert_called_once_with(
-            self.env.cr.dbname, self.user.login, self.password, {}
+        authenticate_mock.assert_called_once_with(
+            self.env.cr.dbname,
+            {"type": "password", "login": self.user.login, "password": self.password},
+            {},
         )
         self.assertEqual(result, self.user.login)
         fake_request.update_env.assert_called_once_with(user=self.user.id)
@@ -211,7 +213,7 @@ class TestDavAuth(TransactionCase):
         users_model = type(self.env["res.users"])
         with mock.patch.object(
             radicale.auth, "request", fake_request
-        ), mock.patch.object(users_model, "_login", side_effect=AccessDenied()):
+        ), mock.patch.object(users_model, "authenticate", side_effect=AccessDenied()):
             auth = self._make_auth()
             result = auth._login(self.user.login, "wrong password")
         self.assertEqual(result, "")

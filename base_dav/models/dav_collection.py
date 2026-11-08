@@ -90,7 +90,7 @@ class DavCollection(models.Model):
 
     def eval(self):
         if not self:
-            return self.env["unknown"]
+            return self.env[self._name].browse()
         self.ensure_one()
         return self.env[self.model_id.model].search(self._eval_domain())
 
@@ -278,7 +278,7 @@ class DavCollection(models.Model):
                 }
             )
 
-            return self.env["radicale.collection"].FileItem(
+            return FileItem(
                 collection,
                 item=attachment,
                 href=href,
