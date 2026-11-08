@@ -55,8 +55,8 @@ jobs:
 
     - name: Install Odoo 18.0 Python dependencies
       run: |
-        python -m pip install --upgrade pip wheel setuptools
-        python -m pip install -r odoo/requirements.txt
+        python3 -m pip install --upgrade pip wheel setuptools
+        python3 -m pip install -r odoo/requirements.txt
 
     - name: Stage modules under test
       run: |
@@ -104,7 +104,7 @@ jobs:
 
     - name: Install declared Python dependencies
       run: |
-        python3 -I - <<'PY' > /tmp/external-deps.txt
+        python3 -I - <<'PY' > "$RUNNER_TEMP/external-deps.txt"
         import ast, os
         stage = os.path.join(os.environ['GITHUB_WORKSPACE'], 'addons-under-test')
         packages = set()
@@ -115,9 +115,9 @@ jobs:
         for package in sorted(packages):
             print(package)
         PY
-        cat /tmp/external-deps.txt
-        if [ -s /tmp/external-deps.txt ]; then
-          python -m pip install -r /tmp/external-deps.txt
+        cat "$RUNNER_TEMP/external-deps.txt"
+        if [ -s "$RUNNER_TEMP/external-deps.txt" ]; then
+          python3 -m pip install -r "$RUNNER_TEMP/external-deps.txt"
         fi
 
     - name: Install and test Odoo modules
