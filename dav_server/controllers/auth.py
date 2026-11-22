@@ -175,6 +175,10 @@ def _second_factor_reason(user, auth_info):
     sync, it is refused up front with an explicit reason.
     """
     if isinstance(auth_info, dict):
+        # API keys are non-interactive credentials; they authenticate without
+        # a second factor, so never apply the interactive MFA refusal to them.
+        if auth_info.get("mfa") == "skip":
+            return None
         # 18.0 password logins always return 'default', which delegates to the
         # MFA module; that case is covered by the _mfa_url check below.
         if auth_info.get("mfa") == "enforce":
