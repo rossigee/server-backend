@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
       - '18.0'
+      - 'upgrade/18.0-*'
   workflow_dispatch:
 
 jobs:
