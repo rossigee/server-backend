@@ -49,7 +49,7 @@ class DavCalendarEvent(models.Model):
     # Not named ``CalendarEvent``: reusing a core class name makes the ORM
     # confusing about which class owns the model. See models/dav_identity.py
     # for why this model declares its own ``dav_uid`` instead of using a mixin.
-    _inherit = ["calendar.event"]
+    _inherit = "calendar.event"
 
     dav_uid = fields.Char(
         string="DAV UID",

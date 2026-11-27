@@ -158,7 +158,7 @@ class TestDavUidMixin(TransactionCase):
                 "name": "Portal",
                 "login": "dav-portal",
                 "email": "portal@example.com",
-                "groups_id": [(6, 0, [self.env.ref("base.group_portal").id])],
+                "group_ids": [(6, 0, [self.env.ref("base.group_portal").id])],
             }
         )
         self.assertFalse(portal.has_group("base.group_user"))

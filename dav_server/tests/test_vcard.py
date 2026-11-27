@@ -51,11 +51,12 @@ class TestVCard(TransactionCase):
         self.assertIn("TEL;TYPE=CELL:+66 81 234 5678", raw)
 
     def test_export_categories_and_title(self):
-        partner = self._partner(function="Physician")
+        partner = self._partner(function="Physician", title="Consultant")
         partner.category_id = [(4, self.category.id)]
         raw = vcard.partner_to_vcard(partner)
         self.assertIn("CATEGORIES:Address Book", raw)
         self.assertIn("TITLE:Physician", raw)
+        self.assertIn("ROLE:Consultant", raw)
 
     def test_export_postal_address_uses_home_type_for_contact(self):
         partner = self._partner(
