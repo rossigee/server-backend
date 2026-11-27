@@ -21,15 +21,13 @@ jobs:
           POSTGRES_USER: odoo
           POSTGRES_PASSWORD: odoo
           POSTGRES_DB: postgres
-          PGPORT: 55437
-        command: -p 55437
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 55437:5432
+          - 5432:5432
 
     env:
       ODOO_MODULES: "base_dav,dav_server"
@@ -130,7 +128,6 @@ jobs:
           -d odoo_test \
           -i "$ODOO_MODULES" \
           --addons-path="$ADDONS" \
-          --db_host=localhost --db_port=55437 --db_user=odoo --db_password=odoo \
-          --http-port=18074 \
+          --db_host=localhost --db_user=odoo --db_password=odoo \
           --test-enable --test-tags="$ODOO_TEST_TAGS" \
           --without-demo=all --stop-after-init --log-level=test
