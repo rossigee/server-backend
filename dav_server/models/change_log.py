@@ -124,4 +124,3 @@ class DavSyncChange(models.Model):
         if count:
             stale.unlink()
         return count
-
