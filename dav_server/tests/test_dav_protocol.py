@@ -49,6 +49,16 @@ class TestDavProtocol(HttpCase):
                 "email": "dav.http@example.com",
                 "password": cls.PASSWORD,
                 "tz": "Asia/Bangkok",
+                "group_ids": [
+                    (
+                        6,
+                        0,
+                        [
+                            cls.env.ref("base.group_user").id,
+                            cls.env.ref("base.group_partner_manager").id,
+                        ],
+                    )
+                ],
             }
         )
         cls.partner = cls.env["res.partner"].create(
@@ -122,7 +132,8 @@ class TestDavProtocol(HttpCase):
         key = (
             self.env["res.users.apikeys"]
             .with_user(self.user)
-            ._generate("dav", "dav api key test")
+            .sudo()
+            ._generate("dav", "dav api key test", None)
         )
         response = self._dav_request(
             "PROPFIND",
@@ -130,7 +141,7 @@ class TestDavProtocol(HttpCase):
             data=PROPFIND_ALLPROP,
             headers=self._auth(self.user.login, key),
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 207)
 
     @mute_logger("dav_server")
     def test_basic_auth_with_wrong_api_key_is_rejected(self):
@@ -148,7 +159,8 @@ class TestDavProtocol(HttpCase):
         key = (
             self.env["res.users.apikeys"]
             .with_user(self.user)
-            ._generate("rpc", "rpc key must not work for dav")
+            .sudo()
+            ._generate("rpc", "rpc key must not work for dav", None)
         )
         response = self._dav_request(
             "PROPFIND",
@@ -165,7 +177,8 @@ class TestDavProtocol(HttpCase):
         key = (
             self.env["res.users.apikeys"]
             .with_user(self.user)
-            ._generate("dav", "2fa dav key")
+            .sudo()
+            ._generate("dav", "2fa dav key", None)
         )
         self.user.totp_secret = "JBSWY3DPEHPK3PXP"
         response = self._dav_request(
@@ -174,7 +187,7 @@ class TestDavProtocol(HttpCase):
             data=PROPFIND_ALLPROP,
             headers=self._auth(self.user.login, key),
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 207)
 
     def test_options_advertises_dav_compliance(self):
         response = self._dav_request("OPTIONS", "/dav/")
@@ -190,7 +203,7 @@ class TestDavProtocol(HttpCase):
                 "login": "dav-protocol-portal",
                 "email": "portal.protocol@example.com",
                 "password": self.PASSWORD,
-                "groups_id": [(6, 0, [self.env.ref("base.group_portal").id])],
+                "group_ids": [(6, 0, [self.env.ref("base.group_portal").id])],
             }
         )
         self.assertFalse(portal.has_group("base.group_user"))

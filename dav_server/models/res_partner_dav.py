@@ -39,7 +39,7 @@ PARTNER_MAPPED_FIELDS = {
 class DavResPartner(models.Model):
     # Not named ``ResPartner``; see models/dav_identity.py for why this model
     # declares its own ``dav_uid`` instead of using a mixin.
-    _inherit = ["res.partner"]
+    _inherit = "res.partner"
 
     dav_uid = fields.Char(
         string="DAV UID",
@@ -49,6 +49,11 @@ class DavResPartner(models.Model):
         default=lambda self: uuid.uuid4().hex,
         help="Stable identifier used as the DAV UID and as the resource href.",
     )
+
+    # Odoo 19 removed res.partner.mobile and res.partner.title; vCard still
+    # needs a CELL number slot and a ROLE value.
+    mobile = fields.Char(string="Mobile", help="Cell number exported as TEL;TYPE=CELL.")
+    title = fields.Char(string="Title", help="Role exported as vCard ROLE.")
 
     def _dav_mapped_fields(self):
         return PARTNER_MAPPED_FIELDS

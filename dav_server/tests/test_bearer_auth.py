@@ -24,7 +24,7 @@ class TestDavBearerAuth(TransactionCase):
                 "name": "DAV Bearer Test User",
                 "login": "dav_bearer_test_user",
                 "email": "dav_bearer_test_user@example.com",
-                "groups_id": [(6, 0, [self.env.ref("base.group_user").id])],
+                "group_ids": [(6, 0, [self.env.ref("base.group_user").id])],
             }
         )
 

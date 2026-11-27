@@ -76,7 +76,7 @@ def partner_to_vcard(partner):
     if organisation:
         card.add("org").value = [organisation]
     if partner.title:
-        card.add("role").value = partner.title.name
+        card.add("role").value = partner.title
 
     for field, types in PHONE_TYPES:
         number = partner[field]

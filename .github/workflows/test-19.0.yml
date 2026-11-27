@@ -1,0 +1,133 @@
+name: Test 19.0
+
+on:
+  push:
+    branches:
+      - '19.0'
+      - 'upgrade/19.0-*'
+  pull_request:
+    branches:
+      - '19.0'
+      - 'upgrade/19.0-*'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      ODOO_MODULES: "base_dav,dav_server"
+      ODOO_TEST_TAGS: "/base_dav,/dav_server"
+
+    steps:
+    - name: Checkout module repository
+      uses: actions/checkout@v4
+      with:
+        path: module-repo
+
+    - name: Fetch Odoo 19.0 source
+      run: git clone --depth 1 --branch 19.0 https://github.com/odoo/odoo.git odoo
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq \
+          libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev \
+          libjpeg-dev libpq-dev libffi-dev libssl-dev postgresql-client
+
+    - name: Install Odoo 19.0 Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip wheel setuptools
+        python3 -m pip install -r odoo/requirements.txt
+
+    - name: Stage modules under test
+      run: |
+        python3 -I - <<'PY'
+        import os, shutil, sys
+        base = os.environ['GITHUB_WORKSPACE']
+        roots = [os.path.join(base, 'module-repo')] + [os.path.join(base, p) for p in []]
+        stage = os.path.join(base, 'addons-under-test')
+        os.makedirs(stage, exist_ok=True)
+        for module in os.environ['ODOO_MODULES'].split(','):
+            found = [os.path.join(r, module) for r in roots if os.path.isdir(os.path.join(r, module))]
+            if len(found) != 1:
+                print('module ' + module + ' found ' + str(len(found)) + ' times, expected 1')
+                sys.exit(1)
+            os.symlink(found[0], os.path.join(stage, module))
+        print('staged: ' + ', '.join(sorted(os.listdir(stage))))
+        PY
+
+    - name: Validate manifests and XML
+      run: |
+        python3 -I - <<'PY'
+        import ast, os, sys
+        import xml.etree.ElementTree as ET
+        stage = os.path.join(os.environ['GITHUB_WORKSPACE'], 'addons-under-test')
+        errors = []
+        for module in sorted(os.listdir(stage)):
+            man = os.path.join(stage, module, '__manifest__.py')
+            with open(man, encoding='utf-8') as fh:
+                manifest = ast.literal_eval(fh.read())
+            if not str(manifest.get('version', '')).startswith('19.0'):
+                errors.append(man + ': version ' + str(manifest.get('version')) + ' is not 19.0')
+            for dirpath, _dirs, files in os.walk(os.path.join(stage, module)):
+                for name in files:
+                    if name.endswith('.xml'):
+                        path = os.path.join(dirpath, name)
+                        try:
+                            ET.parse(path)
+                        except ET.ParseError as exc:
+                            errors.append(path + ': ' + str(exc))
+        if errors:
+            print('\n'.join(errors))
+            sys.exit(1)
+        print('Manifests and XML valid')
+        PY
+
+    - name: Install declared Python dependencies
+      run: |
+        python3 -I - <<'PY' > "$RUNNER_TEMP/external-deps.txt"
+        import ast, os
+        stage = os.path.join(os.environ['GITHUB_WORKSPACE'], 'addons-under-test')
+        packages = set()
+        for module in os.listdir(stage):
+            with open(os.path.join(stage, module, '__manifest__.py'), encoding='utf-8') as fh:
+                manifest = ast.literal_eval(fh.read())
+            packages.update(manifest.get('external_dependencies', {}).get('python', []))
+        for package in sorted(packages):
+            print(package)
+        PY
+        cat "$RUNNER_TEMP/external-deps.txt"
+        if [ -s "$RUNNER_TEMP/external-deps.txt" ]; then
+          python3 -m pip install -r "$RUNNER_TEMP/external-deps.txt"
+        fi
+
+    - name: Install and test Odoo modules
+      run: |
+        ADDONS="odoo/addons,$GITHUB_WORKSPACE/addons-under-test"
+        python3 odoo/odoo-bin \
+          -d odoo_test \
+          -i "$ODOO_MODULES" \
+          --addons-path="$ADDONS" \
+          --db_host=localhost --db_user=odoo --db_password=odoo \
+          --test-enable --test-tags="$ODOO_TEST_TAGS" \
+          --without-demo=all --stop-after-init --log-level=test
